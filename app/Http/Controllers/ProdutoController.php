@@ -3,83 +3,56 @@
 namespace App\Http\Controllers;
 
 use App\Models\Produto;
+use App\Models\ProdutoEstoque;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class ProdutoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    private $fields = [
+        'action' =>'required|Integer',
+        'nome' =>'required|String',
+        'sku' =>'required|String|unique:produto',
+        'quantidade' => 'required|Integer|min:0'
+    ];
+    
+    public function store(Request $request, Produto $produto)
     {
-        //
+        $fields = $this->fields;
+        unset($fields['action']);
+        $messages = ['sku.unique' => 'SKU informado já cadastrado'];
+        if($response = $this->validateFields($request, $fields, $messages)){
+            return response()->json($response,Response::HTTP_BAD_REQUEST);
+        } 
+        
+        $produto->nome = $request['nome'];
+        $produto->sku = $request['sku'];
+        $produto->save();
+        if($produto){
+           ProdutoEstoque::create([
+                'produto_id' => $produto->id,
+                'quantidade' => $request['quantidade'],
+           ]); 
+        }
+        $response['success'] = true;
+        $response['message'] = 'Produto cadastrado com sucesso!';
+        return response()->json($response);
+            
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
+    
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
+    public function validateFields($request,$fields,$messages = []){
+        $validator = Validator::make($request->all(), $fields, $messages);
+        if($validator->fails()){
+            $response['success'] = false;
+            $response['message'] = $validator->messages();
+            return $response;
+        }
+        return;
     }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
+    
 }

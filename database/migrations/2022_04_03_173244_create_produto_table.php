@@ -16,7 +16,7 @@ class CreateProdutoTable extends Migration
         Schema::create('produto', function (Blueprint $table) {
             $table->integer('id', true);
             $table->string('nome');
-            $table->string('sku');
+            $table->string('sku')->unique('produto_sku_key');
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
             $table->softDeletes();

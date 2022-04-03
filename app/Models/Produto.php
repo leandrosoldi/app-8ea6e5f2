@@ -4,17 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use OwenIt\Auditing\Contracts\Auditable;
 /**
  * @property int $id
  * @property string $nome
  * @property string $sku
  * @property ProdutoEstoque $produtoEstoque
  */
-class Produto extends Model
+class Produto extends Model implements Auditable
 {
     use SoftDeletes;
-    // use Au
+    use \OwenIt\Auditing\Auditable;
     
     /**
      * The table associated with the model.
