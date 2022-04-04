@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Audits;
 use App\Models\Produto;
 use App\Models\ProdutoEstoque;
 use Exception;
@@ -62,7 +63,6 @@ class ProdutoController extends Controller
             $response['message'] = 'Operação não permitida. Estoque insuficiente!';
             return response()->json($response,Response::HTTP_BAD_REQUEST);
         }
-
         $produtoEstoque->save();
         $response['success'] = true;
         $response['message'] = 'Produto alterado com sucesso!';
@@ -77,6 +77,44 @@ class ProdutoController extends Controller
             return $response;
         }
         return;
+    }
+
+    public function stockMovement(Request $request,$sku = null){
+
+        
+        $query = Audits::where('auditable_type','App\Models\ProdutoEstoque');
+        if($sku){
+            $produto = Produto::join('produto_estoque as pe','pe.produto_id','produto.id')
+                                ->where('sku',$sku)
+                                ->select('pe.id')->first();
+
+            if(!$produto){
+                $response['success'] = false;
+                $response['message'] = 'SKU não localizado! Atenção: Parâmetro case sensitive.';
+                return response()->json($response,Response::HTTP_BAD_REQUEST);
+            }
+            $query->where('auditable_id',$produto->id);
+        }
+        $history = $query->orderBy('created_at','desc')->get();
+        $movimentacao = [];
+        foreach($history as $h){
+            $m['acao'] = $h->event == "updated" ? "Atualização" : "Criação";
+            
+            $old = $m['acao'] == 'Criação' ? 0 : intval(json_decode($h->old_values)->quantidade) ;
+            $new = intval(json_decode($h->new_values)->quantidade);
+            $prodEst = Produto::join('produto_estoque as pe','pe.produto_id','produto.id')->where('pe.id',$h->auditable_id)->first();
+            
+            $m['produto'] = $prodEst->nome;
+            $m['sku'] = $prodEst->sku;
+            $m['quantidade'] = $new - $old ;
+            $m['qtde_anterior'] = $m['acao'] == 'Criação' ? 0 : json_decode($h->old_values)->quantidade;
+            $m['qtde_atual'] = $new;  
+            $m['data'] = \Carbon\Carbon::parse($h->created_at)->format('d/m/Y H:i');  
+            array_push($movimentacao,$m);
+        }
+        $response['success'] = true;
+        $response['data'] = $movimentacao;
+        return response()->json($response);
     }
     
 }

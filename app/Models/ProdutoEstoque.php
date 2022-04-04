@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $quantidade
  * @property Produto $produto
  */
-class ProdutoEstoque extends Model
+class ProdutoEstoque extends Model implements Auditable
 {
     /**
      * The table associated with the model.
@@ -19,7 +20,7 @@ class ProdutoEstoque extends Model
      */
     protected $table = 'produto_estoque';
     public $timestamps = false;
-
+    use \OwenIt\Auditing\Auditable;
     /**
      * @var array
      */
